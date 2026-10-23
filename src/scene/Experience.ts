@@ -3,7 +3,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { Core } from "./Core";
+import { Bubble } from "./Bubble";
 import { Streams } from "./Streams";
 import { Sparks } from "./Sparks";
 import { channels, palette } from "./palette";
@@ -14,13 +14,13 @@ import { channels, palette } from "./palette";
 type Pose = { x: number; y: number; z: number; scale: number; flow: number; heat: number };
 const POSE_KEYS: (keyof Pose)[] = ["x", "y", "z", "scale", "flow", "heat"];
 
-type Quality = { dpr: number; detail: number; perChannel: number; orbit: number; dust: number; samples: number };
+type Quality = { dpr: number; curve: number; bevel: number; perChannel: number; orbit: number; dust: number; samples: number };
 
 function pickQuality(): Quality {
   const small = Math.min(window.innerWidth, window.innerHeight) < 700;
   const weak = (navigator.hardwareConcurrency ?? 8) <= 4;
-  if (small || weak) return { dpr: 1.5, detail: 28, perChannel: 380, orbit: 500, dust: 500, samples: 0 };
-  return { dpr: 2, detail: 44, perChannel: 900, orbit: 1100, dust: 1400, samples: 4 };
+  if (small || weak) return { dpr: 1.5, curve: 28, bevel: 8, perChannel: 380, orbit: 500, dust: 500, samples: 0 };
+  return { dpr: 2, curve: 48, bevel: 12, perChannel: 900, orbit: 1100, dust: 1400, samples: 4 };
 }
 
 const damp = (current: number, target: number, rate: number, dt: number) =>
@@ -33,7 +33,7 @@ export class Experience {
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(38, 1, 0.1, 120);
   private rig = new THREE.Group();
-  private core: Core;
+  private core: Bubble;
   private streams: Streams;
   private sparks: Sparks;
   private timer = new THREE.Timer();
@@ -70,10 +70,10 @@ export class Experience {
     this.renderer.toneMappingExposure = 1.05;
     this.scene.background = new THREE.Color(palette.lacquer);
 
-    this.core = new Core(this.quality.detail);
+    this.core = new Bubble(this.quality.curve, this.quality.bevel);
     this.streams = new Streams(this.quality.perChannel);
     this.sparks = new Sparks(this.quality.orbit, this.quality.dust);
-    this.rig.add(this.core.mesh, this.streams.points, this.sparks.orbit.points);
+    this.rig.add(this.core.object, this.streams.points, this.sparks.orbit.points);
     this.scene.add(this.rig, this.sparks.dust.points);
     this.camera.position.set(0, 0, 9);
 
@@ -188,6 +188,12 @@ export class Experience {
     this.rig.position.set(this.pose.x, this.pose.y, 0);
     this.rig.scale.setScalar(this.pose.scale * (0.35 + 0.65 * introEase));
     this.rig.rotation.y = Math.sin(this.time * 0.08) * 0.3 + window.scrollY * 0.00025;
+    // The streams swirl with the rig, but the bubble keeps its face (and its typing dots) to camera.
+    const bubble = this.core.object.rotation;
+    bubble.y = -this.rig.rotation.y + Math.sin(this.time * 0.5) * 0.12 + this.parallax.x * 0.25;
+    bubble.x = Math.sin(this.time * 0.63) * 0.07 - this.parallax.y * 0.2;
+    bubble.z = Math.sin(this.time * 0.41) * 0.05;
+    this.core.object.position.y = Math.sin(this.time * 0.9) * 0.05;
 
     // Cursor parallax on the camera; skipped for reduced motion.
     const px = calm || !this.pointerActive ? 0 : this.pointerNdc.x;
@@ -205,6 +211,7 @@ export class Experience {
     cu.uHeat.value = this.pose.heat;
     cu.uPulse.value = damp(cu.uPulse.value, 0, 2.2, dt);
     cu.uFocus.value = damp(cu.uFocus.value, this.focusTarget, 6, dt);
+    this.core.update(this.time, this.pose.heat, 1 + cu.uFocus.value * 0.6 + cu.uPulse.value * 0.8);
 
     const su = this.streams.uniforms;
     su.uTime.value = this.time;
@@ -226,10 +233,10 @@ export class Experience {
       this.raycaster.setFromCamera(this.pointerNdc, this.camera);
       this.inverse.copy(this.core.mesh.matrixWorld).invert();
       this.localRay.copy(this.raycaster.ray).applyMatrix4(this.inverse);
-      if (this.localRay.intersectSphere(this.core.bounds, this.hit)) {
+      if (this.localRay.intersectBox(this.core.bounds, this.hit)) {
         this.hoveringCore = true;
         if (!calm) {
-          cu.uPointer.value.copy(this.hit).normalize();
+          cu.uPointer.value.copy(this.hit);
           target = 1;
         }
       }

@@ -83,7 +83,7 @@ const vertexShader = /* glsl */ `
 
     vec3 dir = normalize(aEmitter + aSeed * 0.07);
     dir = rotateAround(dir, normalize(vec3(0.15, 0.25, 1.0)), e * 2.3);
-    float radius = mix(8.0 + aSeed.x * 1.6, 1.06, e);
+    float radius = mix(8.0 + aSeed.x * 1.6, 0.55, e);
     vec3 p = dir * radius + aSeed * (1.0 - e) * (0.12 + 0.3 * (1.0 - e));
 
     float isFocus = 1.0 - step(0.5, abs(aChannel - uFocusChannel));
@@ -208,7 +208,7 @@ export class Streams {
     return out
       .copy(this.emitters[channel])
       .applyAxisAngle(SWIRL_AXIS, e * 2.3)
-      .multiplyScalar(8 + (1.06 - 8) * e);
+      .multiplyScalar(8 + (0.55 - 8) * e);
   }
 
   dispose() {

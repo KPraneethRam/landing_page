@@ -56,8 +56,13 @@ export function mountNotifications(experience: Experience, colors: string[]) {
       const clear = narrow
         ? pt.y > -40 && pt.y < h * 0.4
         : pt.x > w * 0.5 && pt.y > -80 && pt.y < h + 120;
-      const x = Math.min(Math.max(pt.x, 32), w - (narrow ? 230 : 270));
-      const y = Math.min(Math.max(pt.y, 100), narrow ? h * 0.4 : h - 70);
+      let x = Math.min(Math.max(pt.x, 32), w - 270);
+      let y = Math.min(Math.max(pt.y, 100), h - 70);
+      if (narrow) {
+        // Phones: two fixed slots either side of the bubble, so chips never stack on each other.
+        x = shown === 0 ? 32 : w - 206;
+        y = shown === 0 ? 112 : h * 0.4;
+      }
       const cycleOn = reduced.matches || ((time + chip.offset) % CYCLE) < ON_FOR;
       // Phones get at most two chips at once so the core stays visible.
       const on = inFront && clear && cycleOn && (!narrow || shown < 2);

@@ -15,7 +15,8 @@ npm run build          # type-check + production build into dist/
   pose for that section; scrolling blends between neighbouring poses.
 - `src/scene/Experience.ts` sets up the renderer, bloom (EffectComposer → UnrealBloomPass → OutputPass),
   the scroll choreography, pointer ripples and the channel focus.
-- `src/scene/Core.ts` is the molten core (noise-displaced sphere, normals rebuilt in the vertex shader).
+- `src/scene/Bubble.ts` is the centrepiece: an extruded molten-gold speech bubble with animated typing
+  dots. The surface detail is a per-pixel noise height field with derivative bump mapping.
 - `src/scene/Streams.ts` holds one particle stream per channel. Every particle is animated on the GPU,
   and some are drawn as hearts, chat bubbles, @ and # from a canvas atlas.
 - `src/notifications.ts` adds the hero's notification chips. The scene projects each stream into screen

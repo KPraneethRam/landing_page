@@ -340,6 +340,10 @@ main,
   .core-hint {
     display: none;
   }
+
+  .notif {
+    max-width: 190px;
+  }
 }
 
 /* Page-load moment: the headline rises with the core igniting behind it. */
