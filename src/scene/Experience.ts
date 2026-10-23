@@ -51,6 +51,10 @@ export class Experience {
   private inverse = new THREE.Matrix4();
   private hit = new THREE.Vector3();
   private hoveringCore = false;
+  private projected = new THREE.Vector3();
+
+  /** Runs after each rendered frame, so DOM overlays stay in sync with the camera. */
+  onAfterFrame: ((dt: number) => void) | null = null;
 
   private focusTarget = 0;
   private reducedMotion: MediaQueryList;
@@ -104,6 +108,18 @@ export class Experience {
 
   pulse() {
     this.core.uniforms.uPulse.value = 1;
+  }
+
+  /**
+   * Projects a point along a channel's stream to CSS pixels. `e` runs from 0 (emitter) to 1 (core).
+   * Returns false when the point is behind the camera.
+   */
+  projectStream(channel: number, e: number, out: { x: number; y: number }) {
+    const p = this.streams.streamPoint(channel, e, this.projected);
+    p.applyMatrix4(this.rig.matrixWorld).project(this.camera);
+    out.x = (p.x * 0.5 + 0.5) * window.innerWidth;
+    out.y = (-p.y * 0.5 + 0.5) * window.innerHeight;
+    return p.z < 1;
   }
 
   get isHoveringCore() {
@@ -171,7 +187,7 @@ export class Experience {
 
     this.rig.position.set(this.pose.x, this.pose.y, 0);
     this.rig.scale.setScalar(this.pose.scale * (0.35 + 0.65 * introEase));
-    this.rig.rotation.y = this.time * 0.05 + window.scrollY * 0.00025;
+    this.rig.rotation.y = Math.sin(this.time * 0.08) * 0.3 + window.scrollY * 0.00025;
 
     // Cursor parallax on the camera; skipped for reduced motion.
     const px = calm || !this.pointerActive ? 0 : this.pointerNdc.x;
@@ -199,6 +215,7 @@ export class Experience {
     this.sparks.dust.points.rotation.y = this.time * 0.008;
 
     this.composer.render(dt);
+    this.onAfterFrame?.(dt);
   };
 
   private updatePointerHit(calm: boolean) {

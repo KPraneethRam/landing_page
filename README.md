@@ -16,7 +16,11 @@ npm run build          # type-check + production build into dist/
 - `src/scene/Experience.ts` sets up the renderer, bloom (EffectComposer → UnrealBloomPass → OutputPass),
   the scroll choreography, pointer ripples and the channel focus.
 - `src/scene/Core.ts` is the molten core (noise-displaced sphere, normals rebuilt in the vertex shader).
-- `src/scene/Streams.ts` holds one particle stream per channel. Every particle is animated on the GPU.
+- `src/scene/Streams.ts` holds one particle stream per channel. Every particle is animated on the GPU,
+  and some are drawn as hearts, chat bubbles, @ and # from a canvas atlas.
+- `src/notifications.ts` adds the hero's notification chips. The scene projects each stream into screen
+  space every frame, and the chip for that channel pops up there.
+- `src/icons.ts` holds the channel logos (Simple Icons, CC0) used by the chips and the channel list.
 - `src/scene/Sparks.ts` adds the gold orbit and the background dust.
 - `src/scene/palette.ts` holds the brand colours and the channel order. The channel order must match
   `data-channel` in the HTML.

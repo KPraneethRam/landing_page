@@ -1,5 +1,6 @@
 import "./styles.css";
 import type { Experience } from "./scene/Experience";
+import { iconSvg } from "./icons";
 
 const APP_URL = (import.meta.env.VITE_APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const SALES_URL = import.meta.env.VITE_SALES_URL ?? "mailto:sales@example.com";
@@ -19,6 +20,9 @@ document.querySelectorAll("[data-year]").forEach((el) => {
 });
 
 // ---------- Scene ----------
+
+// Mirrors scene/palette.ts `channels` order.
+const channelColors = ["#25d366", "#e1306c", "#2e8bff", "#2aabee", "#f1e4d0", "#d9dde3", "#7983f5", "#f0990e", "#34d399"];
 
 let experience: Experience | null = null;
 const canvas = document.querySelector<HTMLCanvasElement>("#scene")!;
@@ -40,9 +44,10 @@ const coreHint = () => {
 setTimeout(() => root.classList.add("scene-ready"), 2500);
 
 // The scene is a separate chunk so the copy renders before three.js has downloaded.
-import("./scene/Experience")
-  .then(({ Experience }) => {
+Promise.all([import("./scene/Experience"), import("./notifications")])
+  .then(([{ Experience }, { mountNotifications }]) => {
     experience = new Experience(canvas);
+    mountNotifications(experience, channelColors);
     requestAnimationFrame(() => root.classList.add("scene-ready"));
     document.fonts?.ready.then(() => experience?.remeasure());
     window.addEventListener("load", () => experience?.remeasure());
@@ -64,11 +69,11 @@ onScroll();
 
 const channelNotes: Record<string, string> = {
   "0": "WhatsApp connects with a QR scan or Meta's official sign-up, and supports templates, broadcasts and payments.",
-  "1": "Instagram DMs and comment replies, connected through your Instagram Business account.",
+  "1": "Instagram DMs, comment replies, comment-to-DM automations, Story mentions and live comments.",
   "2": "Messenger conversations from your Facebook Page, in the same inbox.",
   "3": "Telegram connects with a bot token in under a minute.",
   "4": "SMS through Twilio, for customers who never install an app.",
-  "5": "X direct messages, answered with the same knowledge as every other channel.",
+  "5": "X direct messages and mentions, answered with the same knowledge as every other channel.",
   "6": "Discord servers and DMs, for communities that buy.",
   "7": "Voice calls, answered and placed by the same agent, in the same tone.",
   "8": "A chat widget for your website, installed with one script tag.",
@@ -76,11 +81,11 @@ const channelNotes: Record<string, string> = {
 const defaultNote =
   "WhatsApp connects with a QR scan or Meta's official sign-up. The rest connect in a few clicks.";
 const note = document.querySelector<HTMLElement>("[data-channel-note]")!;
-const channelColors = ["#25d366", "#e1306c", "#2e8bff", "#2aabee", "#f1e4d0", "#d9dde3", "#7983f5", "#f0990e", "#34d399"];
 
 document.querySelectorAll<HTMLButtonElement>("[data-channel]").forEach((btn) => {
   const id = btn.dataset.channel!;
   btn.style.setProperty("--c", channelColors[Number(id)]);
+  btn.insertAdjacentHTML("afterbegin", `<span class="channel-icon">${iconSvg(Number(id), 20)}</span>`);
   btn.setAttribute("aria-pressed", "false");
 
   const enter = () => {
@@ -110,6 +115,22 @@ document.querySelectorAll<HTMLButtonElement>("[data-channel]").forEach((btn) => 
     }
   });
 });
+
+// ---------- Comment-to-DM demo plays once when it scrolls into view ----------
+
+const reel = document.querySelector<HTMLElement>("[data-reel]");
+if (reel) {
+  const reelObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        reel.classList.add("is-playing");
+        reelObserver.disconnect();
+      }
+    },
+    { threshold: 0.45 },
+  );
+  reelObserver.observe(reel);
+}
 
 // ---------- How it works: the example chat advances with the active step ----------
 
