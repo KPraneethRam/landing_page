@@ -8,11 +8,12 @@ import { Streams } from "./Streams";
 import { Sparks } from "./Sparks";
 import { channels, palette } from "./palette";
 
-// One scene behind the whole page. Each <section data-scene="x y z scale flow heat"> pins a
-// pose for the rig; scrolling blends between the poses of neighbouring sections.
+// One scene behind the whole page. Each <section data-scene="x y z scale flow heat dim"> pins a
+// pose for the rig; scrolling blends between the poses of neighbouring sections. `dim` (0..1)
+// pulls the whole scene back behind reading-heavy sections so the copy leads.
 
-type Pose = { x: number; y: number; z: number; scale: number; flow: number; heat: number };
-const POSE_KEYS: (keyof Pose)[] = ["x", "y", "z", "scale", "flow", "heat"];
+type Pose = { x: number; y: number; z: number; scale: number; flow: number; heat: number; dim: number };
+const POSE_KEYS: (keyof Pose)[] = ["x", "y", "z", "scale", "flow", "heat", "dim"];
 
 type Quality = { dpr: number; curve: number; bevel: number; perChannel: number; orbit: number; dust: number; samples: number };
 
@@ -39,7 +40,8 @@ export class Experience {
   private timer = new THREE.Timer();
 
   private sections: { el: HTMLElement; pose: Pose; anchor: number }[] = [];
-  private pose: Pose = { x: 0, y: 0, z: 9, scale: 1, flow: 1, heat: 1 };
+  private pose: Pose = { x: 0, y: 0, z: 9, scale: 1, flow: 1, heat: 1, dim: 0 };
+  private appliedDim = -1;
   private intro = 0;
   private time = 0;
 
@@ -129,7 +131,7 @@ export class Experience {
   private readSections() {
     this.sections = [...document.querySelectorAll<HTMLElement>("[data-scene]")].map((el) => {
       const v = el.dataset.scene!.trim().split(/\s+/).map(Number);
-      const pose = Object.fromEntries(POSE_KEYS.map((k, i) => [k, v[i]])) as Pose;
+      const pose = Object.fromEntries(POSE_KEYS.map((k, i) => [k, v[i] ?? 0])) as Pose;
       return { el, pose, anchor: 0 };
     });
     this.measureSections();
@@ -163,7 +165,7 @@ export class Experience {
     return Object.assign(out, s[s.length - 1].pose);
   }
 
-  private scratchPose: Pose = { x: 0, y: 0, z: 0, scale: 0, flow: 0, heat: 0 };
+  private scratchPose: Pose = { x: 0, y: 0, z: 0, scale: 0, flow: 0, heat: 0, dim: 0 };
 
   private frame = () => {
     this.timer.update();
@@ -184,6 +186,13 @@ export class Experience {
     this.pose.scale = damp(this.pose.scale, t.scale * (0.78 + wide * 0.22), rate, dt);
     this.pose.flow = damp(this.pose.flow, t.flow, rate, dt);
     this.pose.heat = damp(this.pose.heat, t.heat, rate, dt);
+    // On narrow screens the copy always sits over the core, so it never dims less than this.
+    this.pose.dim = damp(this.pose.dim, Math.max(t.dim, (1 - wide) * 0.3), rate, dt);
+    const dim = Math.round(this.pose.dim * 100) / 100;
+    if (dim !== this.appliedDim) {
+      this.appliedDim = dim;
+      document.documentElement.style.setProperty("--scene-dim", String(dim));
+    }
 
     this.rig.position.set(this.pose.x, this.pose.y, 0);
     this.rig.scale.setScalar(this.pose.scale * (0.35 + 0.65 * introEase));

@@ -8,7 +8,7 @@
   --parchment: #f1e4d0;
   --muted: #bfa99a;
   --line: rgba(241, 192, 122, 0.16);
-  --surface: rgba(42, 13, 22, 0.82);
+  --surface: rgba(34, 11, 18, 0.96);
 
   --font-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
   --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -107,20 +107,42 @@ a {
   display: block;
 }
 
-/* Keeps copy legible where it overlaps the core on narrow screens. */
+/* Keeps the copy column calm: the scene stays vivid on the right and recedes behind the text.
+   --scene-dim (set per section by the scene) darkens everything for reading-heavy sections. */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(18, 8, 11, 0.72) 0%, rgba(18, 8, 11, 0.25) 46%, transparent 62%);
+  background:
+    linear-gradient(rgba(18, 8, 11, var(--scene-dim, 0)), rgba(18, 8, 11, var(--scene-dim, 0))),
+    linear-gradient(90deg, rgba(18, 8, 11, 0.9) 0%, rgba(18, 8, 11, 0.82) 38%, rgba(18, 8, 11, 0.45) 54%, transparent 68%);
 }
 
 @media (max-width: 760px) {
   body::after {
-    background: linear-gradient(180deg, transparent 0%, rgba(18, 8, 11, 0.35) 38%, rgba(18, 8, 11, 0.8) 62%);
+    background:
+      linear-gradient(rgba(18, 8, 11, var(--scene-dim, 0)), rgba(18, 8, 11, var(--scene-dim, 0))),
+      linear-gradient(180deg, transparent 0%, rgba(18, 8, 11, 0.55) 34%, rgba(18, 8, 11, 0.88) 56%);
   }
+}
+
+/* A soft dark halo lifts copy off any particle that still drifts behind it. */
+.hero .wrap,
+.auto-copy,
+.channels .wrap,
+.how-grid > div,
+.capabilities .wrap,
+.pricing h2,
+.closing .wrap {
+  text-shadow:
+    0 0 12px rgba(18, 8, 11, 0.85),
+    0 1px 3px rgba(18, 8, 11, 0.9);
+}
+
+.btn {
+  text-shadow: none;
 }
 
 .nav,
