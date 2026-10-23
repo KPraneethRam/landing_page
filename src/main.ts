@@ -65,56 +65,159 @@ const onScroll = () => nav.classList.toggle("is-scrolled", window.scrollY > 40);
 window.addEventListener("scroll", onScroll, { passive: true });
 onScroll();
 
-// ---------- Channels: pointing at a name follows that stream into the core ----------
+// ---------- Channels: what LeadConvo does on each app ----------
 
-const channelNotes: Record<string, string> = {
-  "0": "WhatsApp connects with a QR scan or Meta's official sign-up, and supports templates, broadcasts and payments.",
-  "1": "Instagram DMs, comment replies, comment-to-DM automations, Story mentions and live comments.",
-  "2": "Messenger conversations from your Facebook Page, in the same inbox.",
-  "3": "Telegram connects with a bot token in under a minute.",
-  "4": "SMS through Twilio, for customers who never install an app.",
-  "5": "X direct messages and mentions, answered with the same knowledge as every other channel.",
-  "6": "Discord servers and DMs, for communities that buy.",
-  "7": "Voice calls, answered and placed by the same agent, in the same tone.",
-  "8": "A chat widget for your website, installed with one script tag.",
-};
-const defaultNote =
-  "WhatsApp connects with a QR scan or Meta's official sign-up. The rest connect in a few clicks.";
-const note = document.querySelector<HTMLElement>("[data-channel-note]")!;
+// Mirrors scene/palette.ts `channels` order, so a tab's index is also its particle stream.
+type Service = { name: string; setup: string; customer: string; agent: string; team: string; tags: string[] };
+const services: Service[] = [
+  {
+    name: "WhatsApp",
+    setup: "QR scan or Meta's official sign-up",
+    customer: "Asks about price, stock or delivery on WhatsApp.",
+    agent: "Answers from your catalogue in your tone, recommends a match and sends a payment link.",
+    team: "Paid orders and hot leads, flagged in one inbox.",
+    tags: ["Templates", "Broadcasts", "Payment links"],
+  },
+  {
+    name: "Instagram",
+    setup: "Sign in with Instagram",
+    customer: "Comments “price?” on a Reel, mentions you in a Story, or sends a DM.",
+    agent: "Replies to the comment in public, sends the details by DM, and keeps selling when they answer.",
+    team: "Leads scored by buying intent, plus insights for every post, Reel and Story.",
+    tags: ["Comment to DM", "Story mentions", "Live comments", "Insights"],
+  },
+  {
+    name: "Messenger",
+    setup: "Sign in with Meta",
+    customer: "Messages your Facebook Page.",
+    agent: "Answers in your tone, with the same memory of the customer as every other app.",
+    team: "The conversation in the same inbox, ready for you to take over.",
+    tags: ["Page inbox", "Human takeover"],
+  },
+  {
+    name: "Telegram",
+    setup: "Bot token, under a minute",
+    customer: "Writes to your Telegram bot.",
+    agent: "Answers questions, recommends products and quotes your prices.",
+    team: "Hot leads flagged, and scheduled posts to your channel.",
+    tags: ["Bot", "Scheduled posts"],
+  },
+  {
+    name: "SMS",
+    setup: "Your Twilio number",
+    customer: "Texts your number, without installing any app.",
+    agent: "Replies by SMS with the same answers your chat customers get.",
+    team: "Every text threaded with the customer's history.",
+    tags: ["Twilio", "Scheduled messages"],
+  },
+  {
+    name: "X",
+    setup: "Connect your X account",
+    customer: "Sends you a DM or mentions your account.",
+    agent: "Replies to DMs and mentions with the same knowledge as every other channel.",
+    team: "The mentions worth a human, flagged.",
+    tags: ["DMs", "Mentions", "Scheduled posts"],
+  },
+  {
+    name: "Discord",
+    setup: "Add the bot to your server",
+    customer: "Asks a question in your server or by DM.",
+    agent: "Answers in the channel or in DMs, for communities that buy.",
+    team: "Buyers surfaced from the community chatter.",
+    tags: ["Servers", "DMs"],
+  },
+  {
+    name: "Voice calls",
+    setup: "Connect a phone number",
+    customer: "Calls your business.",
+    agent: "Answers and places calls with the same voice and tone as your chats.",
+    team: "Each call logged with the customer's history and intent score.",
+    tags: ["Inbound", "Outbound"],
+  },
+  {
+    name: "Website chat",
+    setup: "One script tag",
+    customer: "Opens the chat widget on your site.",
+    agent: "Answers from your site, PDFs and FAQs, and recommends the right product.",
+    team: "Visitors who are ready to buy, flagged before they leave.",
+    tags: ["Chat widget", "Product picks"],
+  },
+];
 
-document.querySelectorAll<HTMLButtonElement>("[data-channel]").forEach((btn) => {
-  const id = btn.dataset.channel!;
-  btn.style.setProperty("--c", channelColors[Number(id)]);
-  btn.insertAdjacentHTML("afterbegin", `<span class="channel-icon">${iconSvg(Number(id), 20)}</span>`);
-  btn.setAttribute("aria-pressed", "false");
+const svc = document.querySelector<HTMLElement>("[data-svc]");
+if (svc) {
+  const tabList = svc.querySelector<HTMLElement>("[data-svc-tabs]")!;
+  const panel = svc.querySelector<HTMLElement>("[data-svc-panel]")!;
+  const field = (name: string) => svc.querySelector<HTMLElement>(`[data-svc-${name}]`)!;
+  let active = 0;
+  let inView = false;
 
-  const enter = () => {
-    experience?.setFocus(Number(id));
-    note.textContent = channelNotes[id];
-  };
-  const leave = () => {
-    if (btn.getAttribute("aria-pressed") === "true") return;
-    experience?.setFocus(null);
-    note.textContent = defaultNote;
-  };
+  tabList.innerHTML = services
+    .map(
+      (s, i) =>
+        `<button type="button" role="tab" id="svc-tab-${i}" aria-controls="svc-panel" style="--c:${channelColors[i]}">` +
+        `<span class="svc-tab-icon">${iconSvg(i, 18)}</span>${s.name}</button>`,
+    )
+    .join("");
+  const tabs = [...tabList.querySelectorAll<HTMLButtonElement>("[role=tab]")];
 
-  btn.addEventListener("pointerenter", enter);
-  btn.addEventListener("pointerleave", leave);
-  btn.addEventListener("focus", enter);
-  btn.addEventListener("blur", leave);
-  // Tap/click pins the channel so touch users get the same view.
-  btn.addEventListener("click", () => {
-    const pinned = btn.getAttribute("aria-pressed") === "true";
-    document.querySelectorAll("[data-channel]").forEach((b) => b.setAttribute("aria-pressed", "false"));
-    if (pinned) {
-      leave();
-    } else {
-      btn.setAttribute("aria-pressed", "true");
-      enter();
-      experience?.pulse();
+  const syncScene = () => experience?.setFocus(inView ? active : null);
+
+  const select = (i: number, fromUser = false) => {
+    active = i;
+    const s = services[i];
+    tabs.forEach((t, j) => {
+      t.setAttribute("aria-selected", String(j === i));
+      t.tabIndex = j === i ? 0 : -1;
+    });
+    panel.setAttribute("aria-labelledby", `svc-tab-${i}`);
+    panel.style.setProperty("--c", channelColors[i]);
+    field("icon").innerHTML = iconSvg(i, 22);
+    field("name").textContent = s.name;
+    field("setup").textContent = s.setup;
+    field("customer").textContent = s.customer;
+    field("agent").textContent = s.agent;
+    field("team").textContent = s.team;
+    field("tags").innerHTML = s.tags.map((t) => `<li>${t}</li>`).join("");
+    // Restart the fade so the change of app is visible.
+    panel.classList.remove("is-swapping");
+    void panel.offsetWidth;
+    panel.classList.add("is-swapping");
+    // On phones the tab row scrolls sideways; keep the chosen app visible without moving the page.
+    const tab = tabs[i];
+    if (tabList.scrollWidth > tabList.clientWidth) {
+      tabList.scrollTo({ left: tab.offsetLeft - (tabList.clientWidth - tab.offsetWidth) / 2, behavior: "smooth" });
     }
+    syncScene();
+    if (fromUser) experience?.pulse();
+  };
+
+  tabs.forEach((tab, i) => tab.addEventListener("click", () => select(i, true)));
+  tabList.addEventListener("keydown", (e) => {
+    const last = tabs.length - 1;
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowDown" ? (active === last ? 0 : active + 1)
+      : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (active === 0 ? last : active - 1)
+      : e.key === "Home" ? 0
+      : e.key === "End" ? last
+      : null;
+    if (next === null) return;
+    e.preventDefault();
+    select(next, true);
+    tabs[next].focus();
   });
-});
+
+  // The matching stream lights up only while this section is on screen.
+  new IntersectionObserver(
+    (entries) => {
+      inView = entries.some((e) => e.isIntersecting);
+      syncScene();
+    },
+    { threshold: 0.35 },
+  ).observe(svc);
+
+  select(0);
+}
 
 // ---------- Comment-to-DM demo plays once when it scrolls into view ----------
 

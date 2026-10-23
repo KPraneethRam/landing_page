@@ -121,27 +121,44 @@
         </div>
       </section>
 
-      <section class="channels" id="channels" data-scene="2.75 0 9.4 1.05 1.25 1.1 0" aria-labelledby="channels-title">
+      <section class="channels" id="channels" data-scene="3.3 0 9.6 0.95 1.15 1.1 0.1" aria-labelledby="channels-title">
         <div class="wrap">
-          <h2 id="channels-title">Every app your followers message you on.</h2>
+          <h2 id="channels-title">One agent on every app.</h2>
           <p class="section-lede">
-            Each stream is a channel. Point at one to follow it in. Comments, DMs and calls all land in one
-            inbox, with one memory of the customer, whichever app they used.
+            Pick an app to see exactly what LeadConvo handles there. Every conversation lands in one inbox, with
+            one memory of the customer, whichever app they used.
           </p>
-          <ul class="channel-list">
-            <li><button type="button" data-channel="0">WhatsApp</button></li>
-            <li><button type="button" data-channel="1">Instagram</button></li>
-            <li><button type="button" data-channel="2">Messenger</button></li>
-            <li><button type="button" data-channel="3">Telegram</button></li>
-            <li><button type="button" data-channel="4">SMS</button></li>
-            <li><button type="button" data-channel="5">X</button></li>
-            <li><button type="button" data-channel="6">Discord</button></li>
-            <li><button type="button" data-channel="7">Voice calls</button></li>
-            <li><button type="button" data-channel="8">Website chat</button></li>
-          </ul>
-          <p class="channel-note" aria-live="polite" data-channel-note>
-            WhatsApp connects with a QR scan or Meta's official sign-up. The rest connect in a few clicks.
-          </p>
+
+          <div class="svc" data-svc>
+            <div class="svc-tabs" role="tablist" aria-label="Apps" data-svc-tabs></div>
+
+            <article class="svc-panel" id="svc-panel" role="tabpanel" tabindex="0" data-svc-panel>
+              <header class="svc-head">
+                <span class="svc-icon" data-svc-icon></span>
+                <h3 data-svc-name>WhatsApp</h3>
+                <p class="svc-setup"><span>Connects with</span> <b data-svc-setup>QR scan or Meta's official sign-up</b></p>
+              </header>
+              <ol class="svc-flow">
+                <li>
+                  <span class="svc-label">Your customer</span>
+                  <p data-svc-customer>Asks about price, stock or delivery on WhatsApp.</p>
+                </li>
+                <li>
+                  <span class="svc-label">LeadConvo</span>
+                  <p data-svc-agent>Answers from your catalogue in your tone, recommends a match and sends a payment link.</p>
+                </li>
+                <li>
+                  <span class="svc-label">Your team gets</span>
+                  <p data-svc-team>Paid orders and hot leads, flagged in one inbox.</p>
+                </li>
+              </ol>
+              <ul class="svc-tags" aria-label="Included" data-svc-tags>
+                <li>Templates</li>
+                <li>Broadcasts</li>
+                <li>Payment links</li>
+              </ul>
+            </article>
+          </div>
         </div>
       </section>
 
